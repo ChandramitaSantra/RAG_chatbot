@@ -1,0 +1,6 @@
+Flask==2.3.2
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+python-docx==0.8.11
+langchain==0.0.16
+huggingface-hub==0.16.4

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Chat</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin-right: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #asset-ids-list p {
+            margin: 5px 0;
+        }
+        #chat-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: white;
+            height: 300px;
+            overflow-y: auto;
+        }
+        #user-input {
+            width: calc(100% - 100px);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        #send-message {
+            margin-left: 10px;
+        }
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Documents</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="files" multiple>
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>Available Asset IDs:</h2>
+    <div id="asset-ids-list"></div>
+
+    <h2>Select an Asset ID to Start Chat:</h2>
+    <select id="asset-id-select"></select>
+    <button id="start-chat">Start Chat</button>
+
+    <h2>Chat</h2>
+    <div id="chat-box"></div>
+    <input type="text" id="user-input" placeholder="Ask a question...">
+    <button id="send-message">Send</button>
+
+    <script>
+        $(document).ready(function() {
+            $('#upload-form').on('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                $.ajax({
+                    url: '/api/documents/process',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        var assetIdsList = $('#asset-ids-list');
+                        var assetIdSelect = $('#asset-id-select');
+                        assetIdsList.empty();
+                        assetIdSelect.empty();
+
+                        for (var assetId in response.asset_ids) {
+                            assetIdsList.append('<p>' + response.asset_ids[assetId] + ' - Asset ID: ' + assetId + '</p>');
+                            assetIdSelect.append('<option value="' + assetId + '">' + response.asset_ids[assetId] + '</option>');
+                        }
+                    }
+                });
+            });
+
+            $('#start-chat').on('click', function() {
+                var selectedAssetId = $('#asset-id-select').val();
+                $.ajax({
+                    url: '/api/chat/start',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ asset_id: selectedAssetId }),
+                    success: function(response) {
+                        $('#chat-box').append('<p>Chat started with Asset ID: ' + response.asset_id + '</p>');
+                    }
+                });
+            });
+
+            $('#send-message').on('click', function() {
+                var userMessage = $('#user-input').val();
+                $.ajax({
+                    url: '/api/chat/message',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ message: userMessage }),
+                    success: function(response) {
+                        $('#chat-box').append('<p><strong>You:</strong> ' + userMessage + '</p>');
+                        $('#chat-box').append('<p><strong>Bot:</strong> ' + response.response + '</p>');
+                        $('#user-input').val('');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
